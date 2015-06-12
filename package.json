@@ -1,0 +1,24 @@
+{
+  "name": "browser.request",
+  "version": "0.2.1",
+  "description": "AJAX library for browser",
+  "main": "Request.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fenivana/Request.git"
+  },
+  "author": "Jiang Fengming <fenix@noindoin.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fenivana/Request/issues"
+  },
+  "homepage": "https://github.com/fenivana/Request#readme",
+  "keywords": [
+    "ajax",
+    "request",
+    "browser"
+  ]
+}
