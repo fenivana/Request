@@ -101,7 +101,7 @@ Request.prototype = {
     if (opts.query) {
       for (var k in opts.query) {
         if (opts.query[k] != undefined)
-          query += '&' + encodeURIComponent(k) + (opts.query[k] == '' ? '' : '=' + encodeURIComponent(opts.query[k]));
+          query += '&' + encodeURIComponent(k) + (opts.query[k] === '' ? '' : '=' + encodeURIComponent(opts.query[k]));
       }
 
       if (query) {
