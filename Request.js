@@ -70,9 +70,7 @@ Request.profiles = {
         }
       });
 
-      p.req = req;
-
-      return opts.promiseHandler ? opts.promiseHandler(p) : p;
+      return opts.promiseHandler ? opts.promiseHandler.call(this, p, opts) : p;
     }
   }
 };
@@ -88,14 +86,17 @@ Request.prototype = {
         opts[k] = _opts[k];
     }
 
+    // preserve the original url for debugging
+    opts.url = opts._url = url;
+
     if (opts.prefilter)
       opts.prefilter(opts);
 
     if (!opts.method)
       opts.method = opts.body ? 'POST' : 'GET';
 
-    if (opts.base && !/^(https?:|\/)/.test(url))
-      url = opts.base + url;
+    if (opts.base && !/^(https?:|\/)/.test(opts.url))
+      opts.url = opts.base + opts.url;
 
     var query = '';
     if (opts.query) {
@@ -106,11 +107,11 @@ Request.prototype = {
 
       if (query) {
         query = query.slice(1);
-        url += url.indexOf('?') == -1 ?  '?' + query : '&' + query;
+        opts.url += opts.url.indexOf('?') == -1 ?  '?' + query : '&' + query;
       }
     }
 
-    req.open(opts.method, url);
+    req.open(opts.method, opts.url);
 
     ['responseType', 'timeout', 'onreadystatechange', 'withCredentials', 'onabort', 'onerror', 'onload', 'onloadstart', 'onprogress', 'ontimeout', 'onloadend'].forEach(function(v) {
       if (opts[v]) {
