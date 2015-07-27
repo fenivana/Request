@@ -1,5 +1,5 @@
 /*!
- * Request v0.2.1
+ * Request v0.2.5
  * http://www.noindoin.com/
  *
  * Copyright 2014 Jiang Fengming <fenix@noindoin.com>
@@ -23,7 +23,7 @@ Request.defaults = {
 };
 
 Request.profiles = {
-  jsonRpcPromise: {
+  jsonrpcPromise: {
     onreadystatechange: function() {
       if (this.readyState != 4)
         return;
@@ -62,16 +62,39 @@ Request.profiles = {
         req.resolve = resolve;
         req.reject = reject;
 
-        if (opts.body) {
-          req.setRequestHeader('Content-Type', 'application/json');
-          req.send(JSON.stringify(opts.body));
-        } else {
-          req.send();
-        }
+        req.setRequestHeader('Content-Type', 'application/json');
+        req.send(JSON.stringify({
+          jsonrpc: '2.0',
+          method: opts.body.method,
+          params: opts.body.params,
+          id: 1
+        }));
       });
 
       return opts.promiseHandler ? opts.promiseHandler.call(this, p, opts) : p;
     }
+  }
+};
+
+Request.profiles.jsonrpcResponsePromise = {
+  onreadystatechange: Request.profiles.jsonrpcPromise.onreadystatechange,
+  onerror: Request.profiles.jsonrpcPromise.onerror,
+  send: function(opts) {
+    var req = this;
+
+    var p = new Promise(function(resolve, reject) {
+      req.resolve = resolve;
+      req.reject = reject;
+
+      if (opts.body) {
+        req.setRequestHeader('Content-Type', 'application/json');
+        req.send(JSON.stringify(opts.body));
+      } else {
+        req.send();
+      }
+    });
+
+    return opts.promiseHandler ? opts.promiseHandler.call(this, p, opts) : p;
   }
 };
 
