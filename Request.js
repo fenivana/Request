@@ -1,5 +1,5 @@
 /*!
- * Request v0.2.5
+ * Request v0.2.6
  * http://www.noindoin.com/
  *
  * Copyright 2014 Jiang Fengming <fenix@noindoin.com>
@@ -24,41 +24,38 @@ Request.defaults = {
 
 Request.profiles = {
   jsonrpcPromise: {
-    onreadystatechange: function() {
-      if (this.readyState != 4)
-        return;
-
+    onload: function() {
       var data;
       if (this.status >= 200 && this.status < 300 || this.status == 304) {
         try {
           data = JSON.parse(this.responseText);
         } catch (e) {
-          this.reject({
+          return this.reject({
             code: 'EJSONPARSE',
             message: 'JSON parse error'
           });
         }
       } else {
-        return this.reject(this);
+        return this.reject({
+          code: 'HTTP' + this.status,
+          message: this.statusText
+        });
       }
 
-      if (data.error)
-        this.reject(data.error);
-      else
-        this.resolve(data.result);
+      data.error ? this.reject(data.error) : this.resolve(data.result);
     },
 
     onerror: function() {
       this.reject({
-        code: 'EXHR',
-        message: 'XMLHttpRequest error'
+        code: 'HTTP' + this.status,
+        message: this.statusText
       });
     },
 
     send: function(opts) {
       var req = this;
 
-      var p = new Promise(function(resolve, reject) {
+      var promise = new Promise(function(resolve, reject) {
         req.resolve = resolve;
         req.reject = reject;
 
@@ -71,18 +68,21 @@ Request.profiles = {
         }));
       });
 
-      return opts.promiseHandler ? opts.promiseHandler.call(this, p, opts) : p;
+      this.then = promise.then.bind(promise);
+      this.catch = promise.catch.bind(promise);
+
+      return opts.promiseHandler ? opts.promiseHandler.call(this, opts) : this;
     }
   }
 };
 
 Request.profiles.jsonrpcResponsePromise = {
-  onreadystatechange: Request.profiles.jsonrpcPromise.onreadystatechange,
-  onerror: Request.profiles.jsonrpcPromise.onerror,
+  onload: Request.profiles.jsonrpcPromise.onload,
+  onerror: onerror,
   send: function(opts) {
     var req = this;
 
-    var p = new Promise(function(resolve, reject) {
+    var promise = new Promise(function(resolve, reject) {
       req.resolve = resolve;
       req.reject = reject;
 
@@ -94,7 +94,10 @@ Request.profiles.jsonrpcResponsePromise = {
       }
     });
 
-    return opts.promiseHandler ? opts.promiseHandler.call(this, p, opts) : p;
+    this.then = promise.then.bind(promise);
+    this.catch = promise.catch.bind(promise);
+
+    return opts.promiseHandler ? opts.promiseHandler.call(this, opts) : this;
   }
 };
 
