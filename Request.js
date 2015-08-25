@@ -1,5 +1,5 @@
 /*!
- * Request v0.2.6
+ * Request v0.2.7
  * http://www.noindoin.com/
  *
  * Copyright 2014 Jiang Fengming <fenix@noindoin.com>
@@ -18,7 +18,6 @@ function Request(defaults) {
 
 Request.defaults = {
   base: '',
-  prefilter: null,
   send: null
 };
 
@@ -68,10 +67,7 @@ Request.profiles = {
         }));
       });
 
-      this.then = promise.then.bind(promise);
-      this.catch = promise.catch.bind(promise);
-
-      return opts.promiseHandler ? opts.promiseHandler.call(this, opts) : this;
+      return opts.promiseHandler ? opts.promiseHandler.call(this, promise, opts) : promise;
     }
   }
 };
@@ -79,8 +75,9 @@ Request.profiles = {
 Request.profiles.jsonrpcResponsePromise = {
   onload: Request.profiles.jsonrpcPromise.onload,
   onerror: onerror,
-  send: function(opts) {
+  send: function() {
     var req = this;
+    var opts = this.options;
 
     var promise = new Promise(function(resolve, reject) {
       req.resolve = resolve;
@@ -94,16 +91,12 @@ Request.profiles.jsonrpcResponsePromise = {
       }
     });
 
-    this.then = promise.then.bind(promise);
-    this.catch = promise.catch.bind(promise);
-
-    return opts.promiseHandler ? opts.promiseHandler.call(this, opts) : this;
+    return opts.promiseHandler ? opts.promiseHandler.call(this, promise) : promise;
   }
 };
 
 Request.prototype = {
   xhr: function(url, _opts) {
-    var req = new XMLHttpRequest();
     var opts = {};
     for (var k in this.defaults)
       opts[k] = this.defaults[k];
@@ -112,17 +105,12 @@ Request.prototype = {
         opts[k] = _opts[k];
     }
 
-    // preserve the original url for debugging
-    opts.url = opts._url = url;
-
-    if (opts.prefilter)
-      opts.prefilter(opts);
+    opts.url = url;
+    if (opts.base && !/^(https?:|\/)/.test(opts.url))
+      opts.url = opts.base + opts.url;
 
     if (!opts.method)
       opts.method = opts.body ? 'POST' : 'GET';
-
-    if (opts.base && !/^(https?:|\/)/.test(opts.url))
-      opts.url = opts.base + opts.url;
 
     var query = '';
     if (opts.query) {
@@ -137,16 +125,17 @@ Request.prototype = {
       }
     }
 
-    req.open(opts.method, opts.url);
-
+    var req = new XMLHttpRequest();
+    req.options = opts;
     ['responseType', 'timeout', 'onreadystatechange', 'withCredentials', 'onabort', 'onerror', 'onload', 'onloadstart', 'onprogress', 'ontimeout', 'onloadend'].forEach(function(v) {
-      if (opts[v]) {
+      if (opts[v])
         req[v] = opts[v];
-      }
     });
 
+    req.open(opts.method, opts.url);
+
     if (opts.send)
-      return opts.send.call(req, opts);
+      return opts.send.call(req);
     else {
       req.send(opts.body || null);
       return req;
