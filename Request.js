@@ -1,5 +1,5 @@
 /*!
- * Request v0.2.7
+ * Request v0.2.8
  * http://www.noindoin.com/
  *
  * Copyright 2014 Jiang Fengming <fenix@noindoin.com>
@@ -127,12 +127,11 @@ Request.prototype = {
 
     var req = new XMLHttpRequest();
     req.options = opts;
+    req.open(opts.method, opts.url);
     ['responseType', 'timeout', 'onreadystatechange', 'withCredentials', 'onabort', 'onerror', 'onload', 'onloadstart', 'onprogress', 'ontimeout', 'onloadend'].forEach(function(v) {
       if (opts[v])
         req[v] = opts[v];
     });
-
-    req.open(opts.method, opts.url);
 
     if (opts.send)
       return opts.send.call(req);
