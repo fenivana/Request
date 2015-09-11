@@ -1,5 +1,5 @@
 /*!
- * Request v0.2.8
+ * Request v0.2.9
  * http://www.noindoin.com/
  *
  * Copyright 2014 Jiang Fengming <fenix@noindoin.com>
@@ -8,20 +8,66 @@
 
 function Request(defaults) {
   this.defaults = {};
+
   for (var k in Request.defaults)
     this.defaults[k] = Request.defaults[k];
+
   if (defaults) {
-    for (k in defaults)
+    if (defaults.profile) {
+      var profile = defaults.profile;
+      if (profile.constructor == String)
+        profile = Request.profiles[profile];
+      for (p in profile)
+        this.defaults[p] = profile[p];
+    }
+    for (k in defaults) {
       this.defaults[k] = defaults[k];
+    }
   }
 }
 
 Request.defaults = {
+  profile: null,
   base: '',
+  headers: null,
   send: null
 };
 
 Request.profiles = {
+  promise: {
+    onload: function() {
+      var data;
+      if (this.status >= 200 && this.status < 300 || this.status == 304) {
+        this.resolve(this.responseText);
+      } else {
+        this.reject({
+          code: 'HTTP' + this.status,
+          message: this.statusText
+        });
+      }
+    },
+
+    onerror: function() {
+      this.reject({
+        code: 'HTTP' + this.status,
+        message: this.statusText
+      });
+    },
+
+    send: function(data) {
+      var req = this;
+
+      var promise = new Promise(function(resolve, reject) {
+        req.resolve = resolve;
+        req.reject = reject;
+
+        req.send(data);
+      });
+
+      return this.options.promiseHandler ? this.options.promiseHandler.call(this, promise) : promise;
+    }
+  },
+
   jsonrpcPromise: {
     onload: function() {
       var data;
@@ -51,7 +97,7 @@ Request.profiles = {
       });
     },
 
-    send: function(opts) {
+    send: function(data) {
       var req = this;
 
       var promise = new Promise(function(resolve, reject) {
@@ -61,13 +107,13 @@ Request.profiles = {
         req.setRequestHeader('Content-Type', 'application/json');
         req.send(JSON.stringify({
           jsonrpc: '2.0',
-          method: opts.body.method,
-          params: opts.body.params,
+          method: data.method,
+          params: data.params,
           id: 1
         }));
       });
 
-      return opts.promiseHandler ? opts.promiseHandler.call(this, promise, opts) : promise;
+      return this.options.promiseHandler ? this.options.promiseHandler.call(this, promise) : promise;
     }
   }
 };
@@ -75,23 +121,22 @@ Request.profiles = {
 Request.profiles.jsonrpcResponsePromise = {
   onload: Request.profiles.jsonrpcPromise.onload,
   onerror: onerror,
-  send: function() {
+  send: function(data) {
     var req = this;
-    var opts = this.options;
 
     var promise = new Promise(function(resolve, reject) {
       req.resolve = resolve;
       req.reject = reject;
 
-      if (opts.body) {
+      if (data) {
         req.setRequestHeader('Content-Type', 'application/json');
-        req.send(JSON.stringify(opts.body));
+        req.send(JSON.stringify(data));
       } else {
         req.send();
       }
     });
 
-    return opts.promiseHandler ? opts.promiseHandler.call(this, promise) : promise;
+    return this.options.promiseHandler ? this.options.promiseHandler.call(this, promise) : promise;
   }
 };
 
@@ -110,7 +155,7 @@ Request.prototype = {
       opts.url = opts.base + opts.url;
 
     if (!opts.method)
-      opts.method = opts.body ? 'POST' : 'GET';
+      opts.method = opts.data ? 'POST' : 'GET';
 
     var query = '';
     if (opts.query) {
@@ -128,15 +173,21 @@ Request.prototype = {
     var req = new XMLHttpRequest();
     req.options = opts;
     req.open(opts.method, opts.url);
+
     ['responseType', 'timeout', 'onreadystatechange', 'withCredentials', 'onabort', 'onerror', 'onload', 'onloadstart', 'onprogress', 'ontimeout', 'onloadend'].forEach(function(v) {
       if (opts[v])
         req[v] = opts[v];
     });
 
+    if (opts.headers) {
+      for (var name in opts.headers)
+        req.setRequestHeader(name, opts.headers[name]);
+    }
+
     if (opts.send)
-      return opts.send.call(req);
+      return opts.send.call(req, opts.data);
     else {
-      req.send(opts.body || null);
+      req.send(opts.data);
       return req;
     }
   },
@@ -157,19 +208,19 @@ Request.prototype = {
     return this.xhr(url, opts);
   },
 
-  post: function(url, body, opts) {
+  post: function(url, data, opts) {
     if (!opts)
       opts = {};
     opts.method = 'POST';
-    opts.body = body;
+    opts.data = data;
     return this.xhr(url, opts);
   },
 
-  put: function(url, body, opts) {
+  put: function(url, data, opts) {
     if (!opts)
       opts = {};
     opts.method = 'PUT';
-    opts.body = body;
+    opts.data = data;
     return this.xhr(url, opts);
   }
 };
