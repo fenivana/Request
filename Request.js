@@ -1,5 +1,5 @@
 /*!
- * Request v0.2.9
+ * Request v0.2.10
  * http://www.noindoin.com/
  *
  * Copyright 2014 Jiang Fengming <fenix@noindoin.com>
@@ -17,8 +17,8 @@ function Request(defaults) {
       var profile = defaults.profile;
       if (profile.constructor == String)
         profile = Request.profiles[profile];
-      for (p in profile)
-        this.defaults[p] = profile[p];
+      for (k in profile)
+        this.defaults[k] = profile[k];
     }
     for (k in defaults) {
       this.defaults[k] = defaults[k];
@@ -160,7 +160,7 @@ Request.prototype = {
     var query = '';
     if (opts.query) {
       for (var k in opts.query) {
-        if (opts.query[k] !== undefined)
+        if (opts.query[k] != null)
           query += '&' + encodeURIComponent(k) + (opts.query[k] === '' ? '' : '=' + encodeURIComponent(opts.query[k]));
       }
 
