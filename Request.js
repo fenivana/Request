@@ -12,132 +12,15 @@ function Request(defaults) {
   for (var k in Request.defaults)
     this.defaults[k] = Request.defaults[k];
 
-  if (defaults) {
-    if (defaults.profile) {
-      var profile = defaults.profile;
-      if (profile.constructor == String)
-        profile = Request.profiles[profile];
-      for (k in profile)
-        this.defaults[k] = profile[k];
-    }
-    for (k in defaults) {
-      this.defaults[k] = defaults[k];
-    }
+  for (k in defaults) {
+    this.defaults[k] = defaults[k];
   }
 }
 
 Request.defaults = {
-  profile: null,
   base: '',
   headers: null,
   send: null
-};
-
-Request.profiles = {
-  promise: {
-    onload: function() {
-      var data;
-      if (this.status >= 200 && this.status < 300 || this.status == 304) {
-        this.resolve(this.responseText);
-      } else {
-        this.reject({
-          code: 'HTTP' + this.status,
-          message: this.statusText
-        });
-      }
-    },
-
-    onerror: function() {
-      this.reject({
-        code: 'HTTP' + this.status,
-        message: this.statusText
-      });
-    },
-
-    send: function(data) {
-      var req = this;
-
-      var promise = new Promise(function(resolve, reject) {
-        req.resolve = resolve;
-        req.reject = reject;
-
-        req.send(data);
-      });
-
-      return this.options.promiseHandler ? this.options.promiseHandler.call(this, promise) : promise;
-    }
-  },
-
-  jsonrpcPromise: {
-    onload: function() {
-      var data;
-      if (this.status >= 200 && this.status < 300 || this.status == 304) {
-        try {
-          data = JSON.parse(this.responseText);
-        } catch (e) {
-          return this.reject({
-            code: 'EJSONPARSE',
-            message: 'JSON parse error'
-          });
-        }
-      } else {
-        return this.reject({
-          code: 'HTTP' + this.status,
-          message: this.statusText
-        });
-      }
-
-      data.error ? this.reject(data.error) : this.resolve(data.result);
-    },
-
-    onerror: function() {
-      this.reject({
-        code: 'HTTP' + this.status,
-        message: this.statusText
-      });
-    },
-
-    send: function(data) {
-      var req = this;
-
-      var promise = new Promise(function(resolve, reject) {
-        req.resolve = resolve;
-        req.reject = reject;
-
-        req.setRequestHeader('Content-Type', 'application/json');
-        req.send(JSON.stringify({
-          jsonrpc: '2.0',
-          method: data.method,
-          params: data.params,
-          id: 1
-        }));
-      });
-
-      return this.options.promiseHandler ? this.options.promiseHandler.call(this, promise) : promise;
-    }
-  }
-};
-
-Request.profiles.jsonrpcResponsePromise = {
-  onload: Request.profiles.jsonrpcPromise.onload,
-  onerror: onerror,
-  send: function(data) {
-    var req = this;
-
-    var promise = new Promise(function(resolve, reject) {
-      req.resolve = resolve;
-      req.reject = reject;
-
-      if (data) {
-        req.setRequestHeader('Content-Type', 'application/json');
-        req.send(JSON.stringify(data));
-      } else {
-        req.send();
-      }
-    });
-
-    return this.options.promiseHandler ? this.options.promiseHandler.call(this, promise) : promise;
-  }
 };
 
 Request.prototype = {

@@ -1,6 +1,6 @@
 {
   "name": "browser.request",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "AJAX library for browser",
   "main": "Request.js",
   "scripts": {
