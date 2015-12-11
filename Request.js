@@ -141,7 +141,7 @@ Request.profiles.jsonrpcResponsePromise = {
 };
 
 Request.prototype = {
-  xhr: function(url, _opts) {
+  send: function(url, _opts) {
     var opts = {};
     for (var k in this.defaults)
       opts[k] = this.defaults[k];
@@ -197,7 +197,7 @@ Request.prototype = {
       opts = {};
     opts.method = 'GET';
     opts.query = query;
-    return this.xhr(url, opts);
+    return this.send(url, opts);
   },
 
   delete: function(url, query, opts) {
@@ -205,7 +205,7 @@ Request.prototype = {
       opts = {};
     opts.method = 'DELETE';
     opts.query = query;
-    return this.xhr(url, opts);
+    return this.send(url, opts);
   },
 
   post: function(url, data, opts) {
@@ -213,7 +213,7 @@ Request.prototype = {
       opts = {};
     opts.method = 'POST';
     opts.data = data;
-    return this.xhr(url, opts);
+    return this.send(url, opts);
   },
 
   put: function(url, data, opts) {
@@ -221,7 +221,7 @@ Request.prototype = {
       opts = {};
     opts.method = 'PUT';
     opts.data = data;
-    return this.xhr(url, opts);
+    return this.send(url, opts);
   }
 };
 
